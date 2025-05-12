@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "compilerOptions": {
+    "verbatimModuleSyntax": true,  // Opcional, pero si está activada, debes ser explícito
+    "module": "esnext",           // Recomendado para proyectos modernos
+    "target": "esnext"
+  },
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
