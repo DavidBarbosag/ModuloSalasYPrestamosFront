@@ -11,6 +11,11 @@ export const fetchRooms = async () => {
   return response.data;
 };
 
+export const fetchElements = async () => {
+    const response = await api.get('/recreative-elements/');
+    return response.data;
+}
+
 export const searchReservations = async (query: string): Promise<Reservation[]> => {
   try {
     const response = await api.get(`/reservation/search/?q=${encodeURIComponent(query)}`);
