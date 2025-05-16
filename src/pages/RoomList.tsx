@@ -5,6 +5,11 @@ import { fetchRooms } from '../services/api';
 import type { Room } from '../types/Room';
 import RoomSchedule from '../components/RoomSchedule';
 
+
+interface RoomListProps {
+  onRoomSelect?: (room: Room) => void;
+}
+
 // Estilos
 const Section = styled.section`
   padding: 4rem 2rem;
@@ -25,8 +30,9 @@ const RoomContainer = styled.div`
   justify-content: center;
 `;
 
-const RoomCard = styled.div`
-  background-color: white;
+const RoomCard = styled.div<{ selected?: boolean }>`
+  background-color: ${({ selected }) => (selected ? '#e0f7fa' : 'white')};
+  border: ${({ selected }) => (selected ? '2px solid #007bff' : 'none')};
   border-radius: 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -35,6 +41,7 @@ const RoomCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  cursor: pointer;
 `;
 
 const RoomTitle = styled.h3`
@@ -55,8 +62,7 @@ const LoadingMessage = styled.div`
   color: #6b7280; /* gray-500 */
 `;
 
-// Componente principal
-const RoomList = () => {
+const RoomList = ({ onRoomSelect }: RoomListProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,7 +87,11 @@ const RoomList = () => {
       <Title>Salas Disponibles</Title>
       <RoomContainer>
         {rooms.map((room) => (
-          <RoomCard key={room.id}>
+          <RoomCard
+            key={room.id}
+            onClick={() => onRoomSelect?.(room)} // Llama la función al hacer clic
+            style={{ cursor: 'pointer' }}        // Feedback visual de interactividad
+          >
             <RoomTitle>{room.location}</RoomTitle>
             <RoomInfo><strong>Capacidad:</strong> {room.capacity}</RoomInfo>
             <RoomInfo>{room.description}</RoomInfo>

@@ -1,3 +1,10 @@
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  identification: string;
+}
+
 export interface BorrowedElement {
   element: number;
   amount: number;

@@ -1,11 +1,10 @@
 import axios from 'axios';
-import type {Reservation} from '../types/Reservation';
+import type { Reservation, User} from '../types/Reservation';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000',
 });
 
-// Ejemplo: Obtener todas las salas
 export const fetchRooms = async () => {
   const response = await api.get('/room/');
   return response.data;
@@ -24,6 +23,43 @@ export const searchReservations = async (query: string): Promise<Reservation[]> 
     console.error('Error searching reservations:', error);
     throw error;
   }
+};
+
+export const getUserByIdentification = async (identification: string): Promise<User> => {
+  try {
+    const response = await api.get(`/user/${identification}/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw error;
+  }
+};
+
+export const createReservation = async (data: {
+  room: number;
+  reserved_day: string;
+  reserved_hour_block: string;
+  user: number;
+  location: string;
+  state?: string;
+    borrowed_elements?: Array<{
+      element: number;
+      amount: number;
+    }>;
+  }): Promise<Reservation> => {
+    try {
+      const payload = {
+        ...data,
+        state: data.state || 'PENDIENTE',
+        borrowed_elements: data.borrowed_elements || []
+      };
+
+      const response = await api.post('/reservation/', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      throw error;
+    }
 };
 
 // Ejemplo: Reservar una sala
