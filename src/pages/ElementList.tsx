@@ -1,9 +1,13 @@
-// src/pages/RoomList.tsx
+// src/pages/ElementList.tsx
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { fetchElements } from '../services/api';
-import type { Element } from '../types/Element';
+import type { RecreativeElement } from '../types/RecreativeElement.ts';
 
+// Props
+interface ElementListProps {
+  onElementSelect?: (element: RecreativeElement[]) => void;
+}
 
 // Estilos
 const Section = styled.section`
@@ -25,8 +29,9 @@ const ElementContainer = styled.div`
   justify-content: center;
 `;
 
-const ElementCard = styled.div`
-  background-color: white;
+const ElementCard = styled.div<{ selected?: boolean }>`
+  background-color: ${({ selected }) => (selected ? '#e0f7fa' : 'white')};
+  border: ${({ selected }) => (selected ? '2px solid #007bff' : 'none')};
   border-radius: 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -35,6 +40,7 @@ const ElementCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  cursor: pointer;
 `;
 
 const ElementTitle = styled.h3`
@@ -44,7 +50,7 @@ const ElementTitle = styled.h3`
 `;
 
 const ElementInfo = styled.p`
-  color: #4b5563 !important; 
+  color: #4b5563 !important;
   margin: 0;
 `;
 
@@ -55,29 +61,50 @@ const LoadingMessage = styled.div`
   color: #6b7280; /* gray-500 */
 `;
 
-// Componente principal
-const ElementList = () => {
-  const [elements, setElements] = useState<Element[]>([]);
+const ElementList = ({ onElementSelect }: ElementListProps) => {
+  const [elements, setElements] = useState<RecreativeElement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedElements, setSelectedElements] = useState<RecreativeElement[]>([]);
+
+  interface ApiElement {
+    element_id?: number;
+    item_name?: string;
+    item_quantity?: number;
+  }
 
   useEffect(() => {
-  const loadElements = async () => {
-    try {
-      const data = await fetchElements();
-      const transformedData = data.map((item: any) => ({
-        id: item.id || item.element_id,
-        name: item.name || item.item_name,
-        quantity: item.quantity || item.item_quantity || 0,
-      }));
-      setElements(transformedData);
-    } catch (error) {
-      console.error('Error fetching elements:', error);
-    } finally {
-      setLoading(false);
+    const loadElements = async () => {
+      try {
+        const data: ApiElement[] = await fetchElements(); // Usa la interfaz ApiElement
+        const transformedData: RecreativeElement[] = data.map((item) => ({
+          id: item.element_id || 0, // Valor predeterminado si no existe
+          name: item.item_name || 'Sin nombre',
+          quantity: item.item_quantity || 0,
+        }));
+        setElements(transformedData);
+      } catch (error) {
+        console.error('Error fetching elements:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadElements();
+  }, []);
+
+  const toggleElement = (element: RecreativeElement) => {
+  setSelectedElements((prevSelected) => {
+    const isSelected = prevSelected.find((e) => e.id === element.id);
+    const updated = isSelected
+      ? prevSelected.filter((e) => e.id !== element.id) // Quitar si ya está seleccionado
+      : [...prevSelected, element]; // Agregar si no está seleccionado
+
+    if (onElementSelect) {
+      onElementSelect(updated); // Llamar a la función con el estado actualizado
     }
-  };
-  loadElements();
-}, []);
+
+    return updated; // Actualizar el estado
+  });
+};
 
   if (loading) return <LoadingMessage>Cargando elementos...</LoadingMessage>;
 
@@ -85,16 +112,19 @@ const ElementList = () => {
     <Section>
       <Title>Elementos Disponibles</Title>
       <ElementContainer>
-        {elements.map((element) => {
-  console.log('Elemento:', element);
-  return (
-    <ElementCard key={element.id}>
-      <ElementTitle>{element.name}</ElementTitle>
-      <ElementInfo>
-<strong>Cantidad Disponible:</strong> {element.quantity != null ? element.quantity : 'No disponible'}      </ElementInfo>
-    </ElementCard>
-  );
-})}
+        {elements.map((element) => (
+          <ElementCard
+            key={element.id}
+            selected={!!selectedElements.find(e => e.id === element.id)}
+            onClick={() => toggleElement(element)}
+          >
+            <ElementTitle>{element.name}</ElementTitle>
+            <ElementInfo>
+              <strong>Cantidad Disponible:</strong>{' '}
+              {element.quantity != null ? element.quantity : 'No disponible'}
+            </ElementInfo>
+          </ElementCard>
+        ))}
       </ElementContainer>
     </Section>
   );

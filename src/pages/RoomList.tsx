@@ -89,8 +89,8 @@ const RoomList = ({ onRoomSelect }: RoomListProps) => {
         {rooms.map((room) => (
           <RoomCard
             key={room.id}
-            onClick={() => onRoomSelect?.(room)} // Llama la función al hacer clic
-            style={{ cursor: 'pointer' }}        // Feedback visual de interactividad
+            onClick={() => onRoomSelect?.(room)}
+            style={{ cursor: 'pointer' }}
           >
             <RoomTitle>{room.location}</RoomTitle>
             <RoomInfo><strong>Capacidad:</strong> {room.capacity}</RoomInfo>

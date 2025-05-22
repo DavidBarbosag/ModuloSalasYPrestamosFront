@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import type { Room } from '../types/Room';
+import type { RecreativeElement } from '../types/RecreativeElement';
 import styled from 'styled-components';
 import RoomList from './RoomList';
+import ElementList from './ElementList';
 import { useNavigate } from 'react-router-dom';
-import React from 'react';
-import {
-  getUserByIdentification,
-  createReservation
-} from '../services/api';
+import { getUserByIdentification, createReservation } from '../services/api';
+import axios from 'axios';
 
 // Styled components
 const ResponsiveContainer = styled.div`
@@ -30,6 +29,29 @@ const ScheduleSection = styled.div`
     flex: 2;
     padding: 2rem;
   }
+`;
+
+const ElementsSection = styled.div`
+  width: 100%;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+
+  @media (min-width: 768px) {
+    flex: 2;
+    padding: 2rem;
+  }
+`;
+
+const ElementQuantityInput = styled.input`
+  width: 50px;
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+  text-align: center;
 `;
 
 const UserSection = styled.div`
@@ -75,9 +97,9 @@ const TimeSlotCell = styled.td<{ selected: boolean; available: boolean }>`
   padding: 0.2rem;
   border: 1px solid #dee2e6;
   text-align: center;
-  background-color: ${({ selected, available }) => 
+  background-color: ${({ selected, available }) =>
     selected ? '#28a745' : available ? '#ffffff' : '#f8d7da'};
-  color: ${({ selected, available }) => 
+  color: ${({ selected, available }) =>
     selected ? 'white' : available ? '#495057' : '#721c24'};
   cursor: ${({ available }) => (available ? 'pointer' : 'not-allowed')};
   transition: all 0.2s;
@@ -86,7 +108,7 @@ const TimeSlotCell = styled.td<{ selected: boolean; available: boolean }>`
   height: 30px;
 
   &:hover {
-    background-color: ${({ selected, available }) => 
+    background-color: ${({ selected, available }) =>
       selected ? '#28a745' : available ? '#e9ecef' : '#f8d7da'};
   }
 
@@ -160,49 +182,70 @@ interface TimeSlot {
   hour: string;
 }
 
+const VALID_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const VALID_HOURS = [
+  '7:00-8:30',
+  '8:30-10:00',
+  '10:00-11:30',
+  '11:30-13:00',
+  '13:00-14:30',
+  '14:30-16:00',
+  '16:00-17:30',
+  '17:30-19:00'
+];
+
+interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+      [key: string]: unknown;
+    };
+  };
+  message?: string;
+}
+
 const ReserveRoom = () => {
   const navigate = useNavigate();
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [identification, setIdentification] = useState('');
-  const [userId, setUserId] = useState<number  | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [roomSelected, setRoomSelected] = useState<Room | null>(null);
+  const [elementsSelected, setElementsSelected] = useState<RecreativeElement[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const HOURS = [
-    '7:00-8:30',
-    '8:30-10:00',
-    '10:00-11:30',
-    '11:30-13:00',
-    '13:00-14:30',
-    '14:30-16:00',
-    '16:00-17:30',
-    '17:30-19:00'
-  ];
-
   const handleSlotSelect = (day: string, hour: string) => {
+    if (!VALID_DAYS.includes(day)) {
+      setError(`Día inválido. Valores permitidos: ${VALID_DAYS.join(', ')}`);
+      return;
+    }
+    if (!VALID_HOURS.includes(hour)) {
+      setError(`Bloque horario inválido. Valores permitidos: ${VALID_HOURS.join(', ')}`);
+      return;
+    }
     setSelectedSlot({ day, hour });
+    setError('');
   };
 
   const handleSearchUser = async () => {
     setError('');
-    if (!identification) {
-      setError('Por favor ingresa una identificación.');
+    if (!identification.trim()) {
+      setError('Por favor ingresa una identificación válida');
       return;
     }
+
     try {
       setLoading(true);
       const userResponse = await getUserByIdentification(identification);
       if (userResponse?.id) {
         setUserId(userResponse.id);
-        alert('Usuario encontrado y guardado');
       } else {
         setError('Usuario no encontrado');
         setUserId(null);
       }
-    } catch {
-      setError('Error buscando usuario');
+    } catch (error) {
+      console.error('Error buscando usuario:', error);
+      setError('Error al buscar usuario. Verifica la identificación');
       setUserId(null);
     } finally {
       setLoading(false);
@@ -213,37 +256,74 @@ const ReserveRoom = () => {
     e.preventDefault();
     setError('');
 
-    if (!selectedSlot || !roomSelected) {
-      setError('Debes seleccionar un horario y una sala.');
-      return;
-    }
-    if (!userId) {
-      setError('Debes buscar y seleccionar un usuario válido.');
+    console.log('Datos seleccionados:', { selectedSlot, roomSelected, userId, elementsSelected });
+
+
+    // Validaciones básicas
+    if (!selectedSlot || !roomSelected || !userId) {
+      setError('Todos los campos son requeridos: sala, horario y usuario');
       return;
     }
 
     try {
       setLoading(true);
 
-      const reservationResponse = await createReservation({
+      // Validación de elementos
+      const elementsData = elementsSelected.map(e => {
+        if (!e.id || !e.quantity || e.quantity <= 0) {
+          throw new Error(`Cantidad inválida para el elemento ${e.name || 'sin nombre'}`);
+        }
+        return {
+          element: e.id,
+          amount: e.quantity
+        };
+      });
+
+      // Estructura exacta que espera el backend
+      const reservationData = {
         room: roomSelected.id,
         reserved_day: selectedSlot.day,
         reserved_hour_block: selectedSlot.hour,
         user: userId,
-        location: roomSelected.location,
-        borrowed_elements: []
-      });
+        location: roomSelected.location || 'Ubicación no especificada',
+        borrowed_elements: elementsData
+      };
 
-      if (reservationResponse.id) {
-        alert('Reserva realizada con éxito!');
+      console.log('Enviando reserva:', reservationData);
+
+      const response = await createReservation(reservationData);
+
+      if (response.id) {
+        alert('¡Reserva creada con éxito!');
         navigate('/reservations');
       }
-    } catch (error) {
-      console.error('Error creating reservation:', error);
-      setError('Error al realizar la reserva. Por favor intenta nuevamente.');
+    } catch (error: unknown) {
+      console.error('Error en reserva:', error);
+
+      if (axios.isAxiosError(error)) {
+        // Error de Axios
+        const apiError = error as ApiError;
+        if (apiError.response?.data?.detail) {
+          setError(`Error del servidor: ${apiError.response.data.detail}`);
+        } else {
+          setError('Error al procesar la reserva. Verifica los datos');
+        }
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Error desconocido al crear la reserva');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuantityChange = (id: number, quantity: number) => {
+    setElementsSelected((prev) =>
+      prev.map((element) =>
+        element.id === id ? { ...element, quantity } : element
+      )
+    );
   };
 
   return (
@@ -256,16 +336,16 @@ const ReserveRoom = () => {
           <thead>
             <tr>
               <TableHeader>Hora</TableHeader>
-              {DAYS.map(day => (
+              {VALID_DAYS.map(day => (
                 <TableHeader key={day}>{day}</TableHeader>
               ))}
             </tr>
           </thead>
           <tbody>
-            {HOURS.map(hour => (
+            {VALID_HOURS.map(hour => (
               <tr key={hour}>
                 <TimeLabel>{hour}</TimeLabel>
-                {DAYS.map(day => (
+                {VALID_DAYS.map(day => (
                   <TimeSlotCell
                     key={`${day}-${hour}`}
                     selected={selectedSlot?.day === day && selectedSlot?.hour === hour}
@@ -281,6 +361,36 @@ const ReserveRoom = () => {
         </ScheduleTable>
       </ScheduleSection>
 
+      <ElementsSection>
+        <ElementList
+          onElementSelect={(elements) =>
+            setElementsSelected((prev) =>
+              elements.map((newElement) => {
+                const existing = prev.find((e) => e.id === newElement.id);
+                return {
+                  ...newElement,
+                  quantity: existing?.quantity ?? 1,
+                };
+              })
+            )
+          }
+        />
+
+        {elementsSelected.map((element) => (
+          <div key={element.id} style={{ marginBottom: '1rem' }}>
+            <span>{element.name}</span>
+            <ElementQuantityInput
+              type="number"
+              min="1"
+              value={element.quantity || 1}
+              onChange={(e) =>
+                handleQuantityChange(element.id, parseInt(e.target.value, 10))
+              }
+            />
+          </div>
+        ))}
+      </ElementsSection>
+
       <UserSection>
         <Title>Búsqueda de usuario</Title>
         {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
@@ -290,7 +400,6 @@ const ReserveRoom = () => {
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <Input
                 type="text"
-                name="identification"
                 value={identification}
                 onChange={(e) => {
                   setIdentification(e.target.value);
@@ -302,10 +411,10 @@ const ReserveRoom = () => {
               <SubmitButton
                 type="button"
                 onClick={handleSearchUser}
-                disabled={loading || !identification}
+                disabled={loading || !identification.trim()}
                 style={{ width: 'auto', padding: '0 1rem' }}
               >
-                Buscar
+                {loading ? 'Buscando...' : 'Buscar'}
               </SubmitButton>
             </div>
           </FormGroup>
@@ -314,7 +423,7 @@ const ReserveRoom = () => {
             <Label>Sala seleccionada</Label>
             <Input
               type="text"
-              value={roomSelected ? `${roomSelected.location} - ${roomSelected.location}` : 'Ninguna'}
+              value={roomSelected ? `${roomSelected.location} - ${roomSelected.description}` : 'Ninguna'}
               readOnly
             />
           </FormGroup>
@@ -328,7 +437,21 @@ const ReserveRoom = () => {
             />
           </FormGroup>
 
-          <SubmitButton type="submit" disabled={!selectedSlot || !roomSelected || loading}>
+          <FormGroup>
+            <Label>Elementos seleccionados</Label>
+            <Input
+              type="text"
+              value={elementsSelected.length > 0
+                ? elementsSelected.map(e => `${e.name} (${e.quantity})`).join(', ')
+                : 'Ninguno'}
+              readOnly
+            />
+          </FormGroup>
+
+          <SubmitButton
+            type="submit"
+            disabled={!selectedSlot || !roomSelected || !userId || loading}
+          >
             {loading ? 'Procesando...' : 'Confirmar Reserva'}
           </SubmitButton>
         </form>
