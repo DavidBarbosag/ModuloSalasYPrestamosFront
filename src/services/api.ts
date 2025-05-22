@@ -48,13 +48,7 @@ export const createReservation = async (data: {
     }>;
   }): Promise<Reservation> => {
     try {
-      const payload = {
-        ...data,
-        state: data.state || 'PENDIENTE',
-        borrowed_elements: data.borrowed_elements || []
-      };
-
-      const response = await api.post('/reservation/', payload);
+      const response = await api.post('/reservation/', data);
       return response.data;
     } catch (error) {
       console.error('Error creating reservation:', error);

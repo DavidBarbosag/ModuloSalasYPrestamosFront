@@ -114,7 +114,7 @@ const ElementList = ({ onElementSelect }: ElementListProps) => {
       <ElementContainer>
         {elements.map((element) => (
           <ElementCard
-            key={element.id}
+            key={`${element.id}-${element.name}`}
             selected={!!selectedElements.find(e => e.id === element.id)}
             onClick={() => toggleElement(element)}
           >

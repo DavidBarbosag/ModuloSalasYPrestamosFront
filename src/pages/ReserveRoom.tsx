@@ -194,16 +194,6 @@ const VALID_HOURS = [
   '17:30-19:00'
 ];
 
-interface ApiError {
-  response?: {
-    data?: {
-      detail?: string;
-      [key: string]: unknown;
-    };
-  };
-  message?: string;
-}
-
 const ReserveRoom = () => {
   const navigate = useNavigate();
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
@@ -245,7 +235,11 @@ const ReserveRoom = () => {
       }
     } catch (error) {
       console.error('Error buscando usuario:', error);
-      setError('Error al buscar usuario. Verifica la identificación');
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.detail || 'Error al buscar usuario');
+      } else {
+        setError('Error al buscar usuario. Verifica la identificación');
+      }
       setUserId(null);
     } finally {
       setLoading(false);
@@ -256,40 +250,55 @@ const ReserveRoom = () => {
     e.preventDefault();
     setError('');
 
-    console.log('Datos seleccionados:', { selectedSlot, roomSelected, userId, elementsSelected });
-
-
-    // Validaciones básicas
+    // Validate all required fields
     if (!selectedSlot || !roomSelected || !userId) {
       setError('Todos los campos son requeridos: sala, horario y usuario');
       return;
     }
 
+    // Validate day and hour format
+    if (!VALID_DAYS.includes(selectedSlot.day)) {
+      setError(`Día inválido. Valores permitidos: ${VALID_DAYS.join(', ')}`);
+      return;
+    }
+
+    if (!VALID_HOURS.includes(selectedSlot.hour)) {
+      setError(`Bloque horario inválido. Valores permitidos: ${VALID_HOURS.join(', ')}`);
+      return;
+    }
+
+    // Validate elements
+    const elementsData = elementsSelected.map(e => {
+      const quantity = Number(e.quantity) || 1; // Ensure we have a number, default to 1
+      if (quantity <= 0) {
+        throw new Error(`Cantidad inválida para el elemento ${e.name || 'sin nombre'}`);
+      }
+      return {
+        element: e.id,
+        amount: quantity
+      };
+    });
+
     try {
       setLoading(true);
 
-      // Validación de elementos
-      const elementsData = elementsSelected.map(e => {
-        if (!e.id || !e.quantity || e.quantity <= 0) {
-          throw new Error(`Cantidad inválida para el elemento ${e.name || 'sin nombre'}`);
-        }
-        return {
-          element: e.id,
-          amount: e.quantity
-        };
-      });
-
-      // Estructura exacta que espera el backend
       const reservationData = {
         room: roomSelected.id,
         reserved_day: selectedSlot.day,
         reserved_hour_block: selectedSlot.hour,
-        user: userId,
+        user: Number(userId),
+        state: 'activa',
         location: roomSelected.location || 'Ubicación no especificada',
-        borrowed_elements: elementsData
+        borrowed_elements: elementsData.length > 0 ? elementsData : undefined
       };
 
       console.log('Enviando reserva:', reservationData);
+      console.log('Elementos seleccionados:', elementsSelected);
+      console.log("Elements being sent:", {
+        elementsSelected,
+        elementsData,
+        hasInvalidIds: elementsSelected.some(e => e.id <= 0)
+      });
 
       const response = await createReservation(reservationData);
 
@@ -297,30 +306,26 @@ const ReserveRoom = () => {
         alert('¡Reserva creada con éxito!');
         navigate('/reservations');
       }
-    } catch (error: unknown) {
+    } catch (error) {
       console.error('Error en reserva:', error);
-
-      if (axios.isAxiosError(error)) {
-        // Error de Axios
-        const apiError = error as ApiError;
-        if (apiError.response?.data?.detail) {
-          setError(`Error del servidor: ${apiError.response.data.detail}`);
-        } else {
-          setError('Error al procesar la reserva. Verifica los datos');
-        }
-      } else if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('Error desconocido al crear la reserva');
-      }
-    } finally {
-      setLoading(false);
+    if (axios.isAxiosError(error)) {
+      const errorDetail = error.response?.data?.detail ||
+                         error.response?.data?.message ||
+                         'Error al crear la reserva';
+      setError(errorDetail);
+    } else if (error instanceof Error) {
+      setError(error.message);
+    } else {
+      setError('Error desconocido al crear la reserva');
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleQuantityChange = (id: number, quantity: number) => {
-    setElementsSelected((prev) =>
-      prev.map((element) =>
+    setElementsSelected(prev =>
+      prev.map(element =>
         element.id === id ? { ...element, quantity } : element
       )
     );
@@ -342,12 +347,12 @@ const ReserveRoom = () => {
             </tr>
           </thead>
           <tbody>
-            {VALID_HOURS.map(hour => (
-              <tr key={hour}>
+            {VALID_HOURS.map((hour, hourIndex) => (
+              <tr key={`hour-${hourIndex}`}>
                 <TimeLabel>{hour}</TimeLabel>
-                {VALID_DAYS.map(day => (
+                {VALID_DAYS.map((day, dayIndex) => (
                   <TimeSlotCell
-                    key={`${day}-${hour}`}
+                    key={`${day}-${hour}-${dayIndex}`}
                     selected={selectedSlot?.day === day && selectedSlot?.hour === hour}
                     available={true}
                     onClick={() => handleSlotSelect(day, hour)}
@@ -363,29 +368,26 @@ const ReserveRoom = () => {
 
       <ElementsSection>
         <ElementList
-          onElementSelect={(elements) =>
-            setElementsSelected((prev) =>
-              elements.map((newElement) => {
-                const existing = prev.find((e) => e.id === newElement.id);
-                return {
-                  ...newElement,
-                  quantity: existing?.quantity ?? 1,
-                };
-              })
-            )
-          }
+          onElementSelect={(selectedElements) => {
+            console.log("Selected elements:", selectedElements); // Debug log
+            setElementsSelected(selectedElements.map(el => ({
+              ...el,
+              quantity: elementsSelected.find(e => e.id === el.id)?.quantity || 1
+            })));
+          }}
         />
 
-        {elementsSelected.map((element) => (
-          <div key={element.id} style={{ marginBottom: '1rem' }}>
+        {elementsSelected.map(element => (
+          <div key={`element-${element.id}`} style={{ marginBottom: '1rem' }}>
             <span>{element.name}</span>
             <ElementQuantityInput
               type="number"
               min="1"
               value={element.quantity || 1}
-              onChange={(e) =>
-                handleQuantityChange(element.id, parseInt(e.target.value, 10))
-              }
+              onChange={e => {
+                const value = parseInt(e.target.value, 10);
+                handleQuantityChange(element.id, isNaN(value) ? 1 : Math.max(1, value));
+              }}
             />
           </div>
         ))}
@@ -401,7 +403,7 @@ const ReserveRoom = () => {
               <Input
                 type="text"
                 value={identification}
-                onChange={(e) => {
+                onChange={e => {
                   setIdentification(e.target.value);
                   setUserId(null);
                   setError('');
