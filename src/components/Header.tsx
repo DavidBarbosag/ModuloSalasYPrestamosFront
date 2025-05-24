@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 // Definición de tipos para las props
@@ -8,8 +8,8 @@ interface HeaderProps {
 }
 
 // Estilos con styled-components
-const HeaderContainer = styled.header<{ hidden: boolean }>`
-  background: linear-gradient(rgb(156, 16, 16),rgb(177, 26, 26));
+const HeaderContainer = styled.header<{ visible: boolean; scrolled: boolean }>`
+  background: linear-gradient(rgb(156, 16, 16), rgb(177, 26, 26));
   color: rgb(4, 4, 4);
   padding: 1.5rem 0;
   text-align: center;
@@ -17,9 +17,13 @@ const HeaderContainer = styled.header<{ hidden: boolean }>`
   width: 100%;
   top: 0;
   left: 0;
-  transition: transform 0.3s ease-in-out;
-  transform: ${({ hidden }) => hidden ? 'translateY(-100%)' : 'translateY(0)'};
+  transform: translateY(${({ visible }) => visible ? '0' : '-100%'});
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
+  box-shadow: ${({ scrolled }) => 
+    scrolled ? '0 4px 20px rgba(0, 0, 0, 0.15)' : '0 2px 10px rgba(0, 0, 0, 0.1)'
+  };
+  backdrop-filter: ${({ scrolled }) => scrolled ? 'blur(8px)' : 'none'};
 `;
 
 const Container = styled.div`
@@ -40,37 +44,74 @@ const UniversityLogo = styled.img`
   width: 170px;
   height: 90px;
   margin-right: 15px;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 `;
 
 const Title = styled.h1`
   font-size: 2.2rem;
   margin: 0;
+  transition: opacity 0.2s ease;
 `;
 
 const Subtitle = styled.p`
   margin: 0.5rem 0 0 0;
+  transition: opacity 0.2s ease;
 `;
 
 const Header: React.FC<HeaderProps> = () => {
-  const [hidden, setHidden] = useState<boolean>(false);
-  const [lastScrollY, setLastScrollY] = useState<number>(0);
+  const [visible, setVisible] = useState<boolean>(true);
+  const [scrolled, setScrolled] = useState<boolean>(false);
+  const lastScrollY = useRef<number>(0);
+  const scrollTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > lastScrollY) {
-        setHidden(true);
-      } else {
-        setHidden(false);
+      const currentScrollY = window.scrollY;
+      const scrollDifference = currentScrollY - lastScrollY.current;
+      
+      setScrolled(currentScrollY > 50);
+
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
       }
-      setLastScrollY(window.scrollY);
+      
+      if (currentScrollY <= 100) {
+        setVisible(true);
+      } else if (scrollDifference < -5) {
+        setVisible(true);
+      } else if (scrollDifference > 10 && currentScrollY > 200) {
+        setVisible(false);
+      }
+
+      scrollTimeout.current = setTimeout(() => {
+        lastScrollY.current = currentScrollY;
+      }, 10);
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+    let rafId: number;
+    const throttledHandleScroll = () => {
+      rafId = requestAnimationFrame(handleScroll);
+    };
+
+    window.addEventListener('scroll', throttledHandleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', throttledHandleScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+    };
+  }, []);
 
   return (
-    <HeaderContainer hidden={hidden}>
+    <HeaderContainer visible={visible} scrolled={scrolled}>
       <Container>
         <LogoContainer>
           <UniversityLogo 
