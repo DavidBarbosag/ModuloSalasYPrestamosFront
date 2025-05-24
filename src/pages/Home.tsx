@@ -9,6 +9,7 @@ import CalendarioIcon from '../assets/calendario.png';
 import NotificacionIcon from '../assets/notificacion.png';
 import { AvailabilitySection } from './AvailabilityPage';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 // Contenedores y estilos
 const Container = styled.div`
@@ -263,6 +264,7 @@ const Home = () => {
       {/* Sección 3 */}
        <AvailabilitySection />
     </Container>
+    <Footer />
     </>
   );
 };

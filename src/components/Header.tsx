@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import Logo from '../assets/logo.png';
 
 // Definición de tipos para las props
 interface HeaderProps {
@@ -9,7 +10,7 @@ interface HeaderProps {
 
 // Estilos con styled-components
 const HeaderContainer = styled.header<{ visible: boolean; scrolled: boolean }>`
-  background: linear-gradient(rgb(156, 16, 16), rgb(177, 26, 26));
+  background: linear-gradient(rgb(142, 24, 24), rgb(191, 36, 36));
   color: rgb(4, 4, 4);
   padding: 1.5rem 0;
   text-align: center;
@@ -115,7 +116,7 @@ const Header: React.FC<HeaderProps> = () => {
       <Container>
         <LogoContainer>
           <UniversityLogo 
-            src="public/logo.png" 
+            src={Logo} 
             alt="Logo ECI" 
           />
           <div>
