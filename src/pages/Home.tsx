@@ -8,12 +8,14 @@ import LibroIcon from '../assets/libro.png';
 import CalendarioIcon from '../assets/calendario.png';
 import NotificacionIcon from '../assets/notificacion.png';
 import { AvailabilitySection } from './AvailabilityPage';
+import Header from '../components/Header';
 
 // Contenedores y estilos
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 5rem;
+  padding-top: 120px;
 `;
 
 const CardFeatures = styled.ul`
@@ -170,25 +172,27 @@ const CardButton = styled.button`
 const Home = () => {
 
   return (
-    <Container>
-      {/* Sección 1 */}
-      <Section1>
-        <Section1Text>
-          <Title1>Gestión de Salas y Elementos Recreativos</Title1>
-          <Paragraph1>
-            Reserva salas de descanso y elementos recreativos de manera fácil y rápida para disfrutar de momentos de esparcimiento en la Escuela.
-          </Paragraph1>
-          <ButtonGroup>
-            <Link to="/rooms/reserve">
-              <ButtonPrimary>Reservar Ahora</ButtonPrimary>
-            </Link>
-            <Link to="/availability">
-              <ButtonSecondary>Ver Disponibilidad</ButtonSecondary>
-            </Link>
-          </ButtonGroup>
-        </Section1Text>
-        <Image src={ImageTresEstudiantes} alt="Personas compartiendo" />
-      </Section1>
+    <>
+      <Header />
+        <Container>
+          {/* Sección 1 */}
+          <Section1>
+            <Section1Text>
+              <Title1>Gestión de Salas y Elementos Recreativos</Title1>
+              <Paragraph1>
+                Reserva salas de descanso y elementos recreativos de manera fácil y rápida.
+              </Paragraph1>
+              <ButtonGroup>
+                <Link to="/rooms/reserve">
+                  <ButtonPrimary>Reservar Ahora</ButtonPrimary>
+                </Link>
+                <Link to="/availability">
+                  <ButtonSecondary>Ver Disponibilidad</ButtonSecondary>
+                </Link>
+              </ButtonGroup>
+            </Section1Text>
+            <Image src={ImageTresEstudiantes} alt="Personas compartiendo" />
+          </Section1>
 
       {/* Sección 2 */}
       <Section2>
@@ -259,6 +263,7 @@ const Home = () => {
       {/* Sección 3 */}
        <AvailabilitySection />
     </Container>
+    </>
   );
 };
 
