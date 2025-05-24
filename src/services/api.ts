@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Reservation, User} from '../types/Reservation';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net',
 });
 
 export const fetchRooms = async () => {

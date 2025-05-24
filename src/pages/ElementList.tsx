@@ -66,20 +66,21 @@ const ElementList = ({ onElementSelect }: ElementListProps) => {
   const [loading, setLoading] = useState(true);
   const [selectedElements, setSelectedElements] = useState<RecreativeElement[]>([]);
 
-  interface ApiElement {
-    element_id?: number;
-    item_name?: string;
-    item_quantity?: number;
-  }
-
   useEffect(() => {
     const loadElements = async () => {
       try {
-        const data: ApiElement[] = await fetchElements(); // Usa la interfaz ApiElement
-        const transformedData: RecreativeElement[] = data.map((item) => ({
-          id: item.element_id || 0, // Valor predeterminado si no existe
-          name: item.item_name || 'Sin nombre',
-          quantity: item.item_quantity || 0,
+        const data = await fetchElements();
+        console.log('Datos recibidos de la API:', data);
+        interface ApiElement {
+          id: number;
+          item_name: string;
+          item_quantity: number;
+        }
+
+        const transformedData: RecreativeElement[] = (data as ApiElement[]).map((item: ApiElement): RecreativeElement => ({
+          id: item.id,
+          name: item.item_name,
+          quantity: item.item_quantity,
         }));
         setElements(transformedData);
       } catch (error) {
@@ -92,19 +93,16 @@ const ElementList = ({ onElementSelect }: ElementListProps) => {
   }, []);
 
   const toggleElement = (element: RecreativeElement) => {
-  setSelectedElements((prevSelected) => {
-    const isSelected = prevSelected.find((e) => e.id === element.id);
-    const updated = isSelected
-      ? prevSelected.filter((e) => e.id !== element.id) // Quitar si ya está seleccionado
-      : [...prevSelected, element]; // Agregar si no está seleccionado
-
-    if (onElementSelect) {
-      onElementSelect(updated); // Llamar a la función con el estado actualizado
-    }
-
-    return updated; // Actualizar el estado
-  });
-};
+    setSelectedElements((prevSelected) => {
+      const isSelected = prevSelected.some(e => e.id === element.id);
+      const updated = isSelected
+        ? prevSelected.filter(e => e.id !== element.id)
+        : [...prevSelected, element];
+      
+      if (onElementSelect) onElementSelect(updated);
+      return updated;
+    });
+  };
 
   if (loading) return <LoadingMessage>Cargando elementos...</LoadingMessage>;
 
@@ -114,14 +112,13 @@ const ElementList = ({ onElementSelect }: ElementListProps) => {
       <ElementContainer>
         {elements.map((element) => (
           <ElementCard
-            key={`${element.id}-${element.name}`}
-            selected={!!selectedElements.find(e => e.id === element.id)}
+            key={element.id}
+            selected={selectedElements.some(e => e.id === element.id)}
             onClick={() => toggleElement(element)}
           >
             <ElementTitle>{element.name}</ElementTitle>
             <ElementInfo>
-              <strong>Cantidad Disponible:</strong>{' '}
-              {element.quantity != null ? element.quantity : 'No disponible'}
+              <strong>Cantidad Disponible:</strong> {element.quantity}
             </ElementInfo>
           </ElementCard>
         ))}
