@@ -15,9 +15,9 @@ export const fetchElements = async () => {
     return response.data;
 }
 
-export const searchReservations = async (query: string): Promise<Reservation[]> => {
+export const searchReservations = async (id: number): Promise<Reservation[]> => {
   try {
-    const response = await api.get(`/reservation/search/?q=${encodeURIComponent(query)}`);
+    const response = await api.get(`/reservation/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error searching reservations:', error);
@@ -43,7 +43,7 @@ export const createReservation = async (data: {
   location: string;
   state?: string;
     borrowed_elements?: Array<{
-      element: number;
+      element_id: number;
       amount: number;
     }>;
   }): Promise<Reservation> => {
@@ -66,4 +66,21 @@ export const reserveRoom = async (roomId: number, day: string, hour: string) => 
   return response.data;
 
 
+};
+
+export const getAllReservations = async (): Promise<Reservation[]> => {
+  const response = await api.get('/reservation/');
+  return response.data;
+};
+
+export const getReservationById = async (id: number): Promise<Reservation | null> => {
+  try {
+    const response = await api.get(`/reservation/${id}/`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 };

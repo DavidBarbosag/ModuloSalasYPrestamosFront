@@ -1,96 +1,129 @@
-import { useState } from 'react';
-import { searchReservations } from '../services/api';
+import { useState, useEffect } from 'react';
+import { getAllReservations, getReservationById } from '../services/api';
 import {
   Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Paper, TextField,
-  Button, Typography, CircularProgress
+  Button, Typography, CircularProgress, Box,
+  Alert, Tabs, Tab
 } from '@mui/material';
 
-interface BorrowedElement {
-  element: number;
-  amount: number;
-  element_details: {
-    id: number;
-    name: string;
-  };
-}
-
-interface Reservation {
-  id: number;
-  location: string;
-  state: string;
-  reserved_day: string;
-  reserved_hour_block: string;
-  user: number;
-  room : number;
-  borrowed_elements: BorrowedElement[];
-}
+import type { Reservation } from '../types/Reservation';
 
 const ReservationsPage = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchId, setSearchId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setError('Ingresa un nombre o código de reserva');
-      return;
-    }
-
+  const fetchAllReservations = async () => {
     setLoading(true);
     setError('');
-
     try {
-      const data = await searchReservations(searchQuery);
-      setReservations(data);
+      const data = await getAllReservations();
+      setReservations(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError('Error al buscar reservas');
+      setError('Error al cargar todas las reservas');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchReservationById = async () => {
+    if (!searchId.trim()) {
+      setError('Ingresa un ID de reserva');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const reservation = await getReservationById(Number(searchId));
+      setReservations(reservation ? [reservation] : []);
+    } catch (err) {
+      setError('Error al buscar la reserva');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    setSearchId('');
+    setError('');
+    setReservations([]);
+  };
+
+  useEffect(() => {
+    if (activeTab === 0) {
+      fetchAllReservations();
+    }
+  }, [activeTab]);
+
   return (
     <div style={{ padding: '24px' }}>
       <Typography variant="h4" gutterBottom>
-        Buscar Reservas
+        Gestión de Reservas
       </Typography>
 
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>        <TextField
-          label="Nombre o Código de Reserva"
-          variant="outlined"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          fullWidth
-          error={!!error}
-          helperText={error}
-        />
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={handleTabChange}>
+          <Tab label="Todas las reservas" />
+          <Tab label="Buscar por ID" />
+        </Tabs>
+      </Box>
 
-        <Button
-          variant="contained"
-          onClick={handleSearch}
-          disabled={loading || !searchQuery.trim()}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          Buscar
-        </Button>
-      </div>
+      {activeTab === 1 && (
+        <Box sx={{ display: 'flex', gap: '16px', marginBottom: '24px', alignItems: 'center' }}>
+          <TextField
+            label="ID de Reserva"
+            variant="outlined"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            fullWidth
+            error={!!error}
+            helperText={error}
+            type="number"
+            inputProps={{ min: 1 }}
+          />
 
-      {reservations.length > 0 ? (
+          <Button
+            variant="contained"
+            onClick={fetchReservationById}
+            disabled={loading || !searchId.trim()}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+            sx={{ height: '56px' }}
+          >
+            Buscar
+          </Button>
+        </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : reservations.length > 0 ? (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell><strong>Código</strong></TableCell>
+                <TableCell><strong>ID</strong></TableCell>
                 <TableCell><strong>Usuario</strong></TableCell>
-                <TableCell><strong>Id Sala</strong></TableCell>
-                <TableCell><strong>Ubicación de la sala</strong></TableCell>
+                <TableCell><strong>Sala</strong></TableCell>
+                <TableCell><strong>Ubicación</strong></TableCell>
                 <TableCell><strong>Día</strong></TableCell>
                 <TableCell><strong>Horario</strong></TableCell>
                 <TableCell><strong>Estado</strong></TableCell>
-                <TableCell><strong>Elementos prestados</strong></TableCell>
+                <TableCell><strong>Elementos</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -102,18 +135,28 @@ const ReservationsPage = () => {
                   <TableCell>{reservation.location}</TableCell>
                   <TableCell>{reservation.reserved_day}</TableCell>
                   <TableCell>{reservation.reserved_hour_block}</TableCell>
-                  <TableCell>{reservation.state}</TableCell>
                   <TableCell>
-                    {reservation.borrowed_elements.length > 0 ? (
-                      <ul>
+                    <span style={{
+                      color: reservation.state === 'activa' ? 'green' : 
+                            reservation.state === 'cancelada' ? 'red' : 'gray',
+                      fontWeight: 'bold'
+                    }}>
+                      {reservation.state}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {reservation.borrowed_elements?.length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: '20px' }}>
                         {reservation.borrowed_elements.map((element, index) => (
                           <li key={index}>
-                            {element.element_details.name} (Cantidad: {element.amount})
+                            {element.element_details?.name} (x{element.amount})
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <Typography variant="body2">No hay elementos prestados</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Ninguno
+                      </Typography>
                     )}
                   </TableCell>
                 </TableRow>
@@ -124,7 +167,8 @@ const ReservationsPage = () => {
       ) : (
         !loading && (
           <Typography variant="body1" style={{ textAlign: 'center', marginTop: '24px' }}>
-            {searchQuery ? "No se encontraron reservas" : "Ingresa un criterio de búsqueda"}
+            {activeTab === 0 ? 'No hay reservas registradas' : 
+             searchId ? 'No se encontró la reserva' : 'Ingresa un ID de reserva'}
           </Typography>
         )
       )}

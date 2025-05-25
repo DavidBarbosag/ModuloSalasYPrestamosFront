@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { Room } from '../types/Room';
 import type { RecreativeElement } from '../types/RecreativeElement';
 import styled from 'styled-components';
@@ -93,23 +93,24 @@ const TableHeader = styled.th`
   min-width: 50px;
 `;
 
-const TimeSlotCell = styled.td<{ selected: boolean; available: boolean }>`
+// Solucionado: Usar $ prefix para props transientes en styled-components
+const TimeSlotCell = styled.td<{ $selected: boolean; $available: boolean }>`
   padding: 0.2rem;
   border: 1px solid #dee2e6;
   text-align: center;
-  background-color: ${({ selected, available }) =>
-    selected ? '#28a745' : available ? '#ffffff' : '#f8d7da'};
-  color: ${({ selected, available }) =>
-    selected ? 'white' : available ? '#495057' : '#721c24'};
-  cursor: ${({ available }) => (available ? 'pointer' : 'not-allowed')};
+  background-color: ${({ $selected, $available }) =>
+    $selected ? '#28a745' : $available ? '#ffffff' : '#f8d7da'};
+  color: ${({ $selected, $available }) =>
+    $selected ? 'white' : $available ? '#495057' : '#721c24'};
+  cursor: ${({ $available }) => ($available ? 'pointer' : 'not-allowed')};
   transition: all 0.2s;
   font-size: 0.7rem;
   min-width: 50px;
   height: 30px;
 
   &:hover {
-    background-color: ${({ selected, available }) =>
-      selected ? '#28a745' : available ? '#e9ecef' : '#f8d7da'};
+    background-color: ${({ $selected, $available }) =>
+      $selected ? '#28a745' : $available ? '#e9ecef' : '#f8d7da'};
   }
 
   @media (max-width: 768px) {
@@ -177,12 +178,22 @@ const SubmitButton = styled.button`
   }
 `;
 
+const ErrorMessage = styled.div`
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+`;
+
 interface TimeSlot {
   day: string;
   hour: string;
 }
 
-const VALID_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const VALID_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 const VALID_HOURS = [
   '7:00-8:30',
   '8:30-10:00',
@@ -199,6 +210,7 @@ const ReserveRoom = () => {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [identification, setIdentification] = useState('');
   const [userId, setUserId] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [roomSelected, setRoomSelected] = useState<Room | null>(null);
   const [elementsSelected, setElementsSelected] = useState<RecreativeElement[]>([]);
   const [loading, setLoading] = useState(false);
@@ -227,8 +239,9 @@ const ReserveRoom = () => {
     try {
       setLoading(true);
       const userResponse = await getUserByIdentification(identification);
-      if (userResponse?.id) {
-        setUserId(userResponse.id);
+      if (userResponse?.user_id) {
+        setUserId(userResponse.user_id);
+        setUserName(userResponse.full_name);
       } else {
         setError('Usuario no encontrado');
         setUserId(null);
@@ -236,7 +249,10 @@ const ReserveRoom = () => {
     } catch (error) {
       console.error('Error buscando usuario:', error);
       if (axios.isAxiosError(error)) {
-        setError(error.response?.data?.detail || 'Error al buscar usuario');
+        const errorMessage = error.response?.data?.detail || 
+                           error.response?.data?.message || 
+                           'Error al buscar usuario';
+        setError(errorMessage);
       } else {
         setError('Error al buscar usuario. Verifica la identificación');
       }
@@ -269,12 +285,12 @@ const ReserveRoom = () => {
 
     // Validate elements
     const elementsData = elementsSelected.map(e => {
-      const quantity = Number(e.quantity) || 1; // Ensure we have a number, default to 1
+      const quantity = Number(e.quantity) || 1;
       if (quantity <= 0) {
         throw new Error(`Cantidad inválida para el elemento ${e.name || 'sin nombre'}`);
       }
       return {
-        element: e.id,
+        element_id: e.id,
         amount: quantity
       };
     });
@@ -293,35 +309,31 @@ const ReserveRoom = () => {
       };
 
       console.log('Enviando reserva:', reservationData);
-      console.log('Elementos seleccionados:', elementsSelected);
-      console.log("Elements being sent:", {
-        elementsSelected,
-        elementsData,
-        hasInvalidIds: elementsSelected.some(e => e.id <= 0)
-      });
 
       const response = await createReservation(reservationData);
-
+      if (axios.isAxiosError(error)) {
+        console.error('Detalle del error:', error.response?.data);
+      }
       if (response.id) {
         alert('¡Reserva creada con éxito!');
-        navigate('/reservations');
+        navigate('/Home');
       }
     } catch (error) {
       console.error('Error en reserva:', error);
-    if (axios.isAxiosError(error)) {
-      const errorDetail = error.response?.data?.detail ||
-                         error.response?.data?.message ||
-                         'Error al crear la reserva';
-      setError(errorDetail);
-    } else if (error instanceof Error) {
-      setError(error.message);
-    } else {
-      setError('Error desconocido al crear la reserva');
+      if (axios.isAxiosError(error)) {
+        const errorDetail = error.response?.data?.detail ||
+                           error.response?.data?.message ||
+                           'Error al crear la reserva';
+        setError(errorDetail);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Error desconocido al crear la reserva');
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleQuantityChange = (id: number, quantity: number) => {
     setElementsSelected(prev =>
@@ -330,6 +342,19 @@ const ReserveRoom = () => {
       )
     );
   };
+
+  const handleElementSelect = useCallback((selectedElements: RecreativeElement[]) => {
+  setElementsSelected(prevSelected =>
+    selectedElements.map(el => {
+      const existing = prevSelected.find(e => e.id === el.id);
+      return {
+        ...el,
+        quantity: existing?.quantity || 1
+      };
+    })
+  );
+}, []);
+
 
   return (
     <ResponsiveContainer>
@@ -353,8 +378,8 @@ const ReserveRoom = () => {
                 {VALID_DAYS.map((day, dayIndex) => (
                   <TimeSlotCell
                     key={`${day}-${hour}-${dayIndex}`}
-                    selected={selectedSlot?.day === day && selectedSlot?.hour === hour}
-                    available={true}
+                    $selected={selectedSlot?.day === day && selectedSlot?.hour === hour}
+                    $available={true}
                     onClick={() => handleSlotSelect(day, hour)}
                   >
                     {selectedSlot?.day === day && selectedSlot?.hour === hour ? '✓' : ''}
@@ -367,15 +392,7 @@ const ReserveRoom = () => {
       </ScheduleSection>
 
       <ElementsSection>
-        <ElementList
-          onElementSelect={(selectedElements) => {
-            console.log("Selected elements:", selectedElements); // Debug log
-            setElementsSelected(selectedElements.map(el => ({
-              ...el,
-              quantity: elementsSelected.find(e => e.id === el.id)?.quantity || 1
-            })));
-          }}
-        />
+        <ElementList onElementSelect={handleElementSelect} />
 
         {elementsSelected.map(element => (
           <div key={`element-${element.id}`} style={{ marginBottom: '1rem' }}>
@@ -394,11 +411,12 @@ const ReserveRoom = () => {
       </ElementsSection>
 
       <UserSection>
-        <Title>Búsqueda de usuario</Title>
-        {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+        <Title>Datos de la reserva</Title>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        
         <form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label>Identificación</Label>
+            <Label>Buscar usuario por Id</Label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <Input
                 type="text"
@@ -408,6 +426,7 @@ const ReserveRoom = () => {
                   setUserId(null);
                   setError('');
                 }}
+                placeholder="Ingresa la identificación del usuario"
                 required
               />
               <SubmitButton
@@ -421,12 +440,25 @@ const ReserveRoom = () => {
             </div>
           </FormGroup>
 
+          {userId && (
+            <FormGroup>
+              <Label>Usuario encontrado</Label>
+              <Input
+                type="text"
+                value={`Usuario ID: ${userId} , nombre: ${userName}`}
+                readOnly
+                style={{ backgroundColor: '#e9ecef', color: 'black' }}
+              />
+            </FormGroup>
+          )}
+        
           <FormGroup>
             <Label>Sala seleccionada</Label>
             <Input
               type="text"
               value={roomSelected ? `${roomSelected.location} - ${roomSelected.description}` : 'Ninguna'}
               readOnly
+              style={{ backgroundColor: '#f8f9fa' , color: 'black' }}
             />
           </FormGroup>
 
@@ -436,6 +468,7 @@ const ReserveRoom = () => {
               type="text"
               value={selectedSlot ? `${selectedSlot.day} ${selectedSlot.hour}` : 'Ninguno'}
               readOnly
+              style={{ backgroundColor: '#f8f9fa' , color: 'black' }}
             />
           </FormGroup>
 
@@ -447,6 +480,7 @@ const ReserveRoom = () => {
                 ? elementsSelected.map(e => `${e.name} (${e.quantity})`).join(', ')
                 : 'Ninguno'}
               readOnly
+              style={{ backgroundColor: '#f8f9fa' , color: 'black' }}
             />
           </FormGroup>
 
