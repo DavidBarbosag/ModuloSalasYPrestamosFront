@@ -239,9 +239,9 @@ const ReserveRoom = () => {
     try {
       setLoading(true);
       const userResponse = await getUserByIdentification(identification);
-      if (userResponse?.user_id) {
-        setUserId(userResponse.user_id);
-        setUserName(userResponse.full_name);
+      if (userResponse?.id) {
+        setUserId(userResponse.id);
+        setUserName(userResponse.name);
       } else {
         setError('Usuario no encontrado');
         setUserId(null);
@@ -302,7 +302,7 @@ const ReserveRoom = () => {
         room: roomSelected.id,
         reserved_day: selectedSlot.day,
         reserved_hour_block: selectedSlot.hour,
-        user: Number(userId),
+        user: String(userId),
         state: 'activa',
         location: roomSelected.location || 'Ubicación no especificada',
         borrowed_elements: elementsData.length > 0 ? elementsData : undefined
