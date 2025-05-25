@@ -234,7 +234,7 @@ const Home = () => {
                 Para uso individual o grupal
               </FeatureItem>
             </CardFeatures>
-            <Link to="/reserve">
+            <Link to="/elements/reserve">
               <CardButton>Ver Elementos</CardButton>
             </Link>
           </Card>

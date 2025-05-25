@@ -5,6 +5,7 @@ import ElementList from './pages/ElementList';
 import ReservationsPage from './pages/ReservationsPage';
 import AvailabilityPage from './pages/AvailabilityPage';
 import ReserveRoom from './pages/ReserveRoom';
+import ReserveRecreativeElements from './pages/ReserveRecreativeElements';
 import Home from './pages/Home';
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/elements" element={<ElementList />} />
             <Route path="/availability" element={<AvailabilityPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
+          <Route path="/elements/reserve" element={<ReserveRecreativeElements />} />
       </Routes>
     </Router>
   );

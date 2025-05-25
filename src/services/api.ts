@@ -11,9 +11,18 @@ export const fetchRooms = async () => {
 };
 
 export const fetchElements = async () => {
-    const response = await api.get('/recreative-elements/');
-    return response.data;
-}
+  const response = await api.get('/recreative-elements/');
+  return response.data.map((item: { id: number; item_name: string; item_quantity: number }) => ({
+    element: item.id,
+    label: item.item_name,
+    quantity: item.item_quantity,
+    element_details: {
+      id: item.id,
+      name: item.item_name,
+      quantity: item.item_quantity,
+    },
+  }));
+};
 
 export const searchReservations = async (id: number): Promise<Reservation[]> => {
   try {
@@ -36,15 +45,20 @@ export const getUserByIdentification = async (identification: string): Promise<U
 };
 
 export const createReservation = async (data: {
-  room: number;
+  room?: number;
   reserved_day: string;
   reserved_hour_block: string;
-  user: number;
+  user: string;
   location: string;
   state?: string;
     borrowed_elements?: Array<{
       element_id: number;
       amount: number;
+      element_details?: {
+        id: number;
+        item_name: string;
+        item_quantity: number;
+      };
     }>;
   }): Promise<Reservation> => {
     try {
@@ -55,6 +69,9 @@ export const createReservation = async (data: {
       throw error;
     }
 };
+
+
+
 
 // Ejemplo: Reservar una sala
 export const reserveRoom = async (roomId: number, day: string, hour: string) => {
@@ -84,3 +101,5 @@ export const getReservationById = async (id: number): Promise<Reservation | null
     throw error;
   }
 };
+
+
