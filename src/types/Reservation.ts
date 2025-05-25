@@ -1,15 +1,15 @@
 export interface User {
-  id: number;
-  name: string;
+  user_id: number;
+  full_name: string;
   email: string;
   identification: string;
 }
 
 export interface BorrowedElement {
-  element: number;
+  element_id: number;
   amount: number;
   element_details: {
-    id: number;
+    element: number;
     name: string;
   };
 }
