@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import Logo from '../assets/logo.png';
+import { Link } from 'react-router-dom';
 
 // Definición de tipos para las props
 interface HeaderProps {
@@ -10,7 +11,7 @@ interface HeaderProps {
 
 // Estilos con styled-components
 const HeaderContainer = styled.header<{ visible: boolean; scrolled: boolean }>`
-  background: linear-gradient(rgb(142, 24, 24), rgb(191, 36, 36));
+  background: linear-gradient(rgb(243, 30, 30), rgb(234, 77, 77));
   color: rgb(4, 4, 4);
   padding: 1.5rem 0;
   text-align: center;
@@ -61,6 +62,27 @@ const Title = styled.h1`
 const Subtitle = styled.p`
   margin: 0.5rem 0 0 0;
   transition: opacity 0.2s ease;
+`;
+
+const AdminButton = styled(Link)`
+  background-color: #b91c1c;
+  color: white;
+  padding: 0.5rem 1rem; 
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-left: 5rem;
+  align-self: center;
+  white-space: nowrap; 
+  
+  &:hover {
+    background-color: #7f1d1d;
+    transform: scale(1.05);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+  }
 `;
 
 const Header: React.FC<HeaderProps> = () => {
@@ -123,6 +145,9 @@ const Header: React.FC<HeaderProps> = () => {
             <Title>Reserva de salas y elementos recreativos</Title>
             <Subtitle>Escuela Colombiana de Ingeniería Julio Garavito</Subtitle>
           </div>
+          <AdminButton to="/admin">
+            Admin
+          </AdminButton>
         </LogoContainer>
       </Container>
     </HeaderContainer>

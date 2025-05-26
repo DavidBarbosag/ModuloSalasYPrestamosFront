@@ -5,8 +5,8 @@ const isLocalhost = window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
 
 const baseURL = isLocalhost
-    ? 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net'
-    : 'http://localhost:8000';
+    ? 'http://localhost:8000'
+    : 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net';
     
 
 const api = axios.create({
@@ -143,4 +143,69 @@ export const getReservationById = async (id: number): Promise<Reservation | null
   }
 };
 
+export const getReservationBysUserId = async (id: number): Promise<Reservation | null> => {
+  try {
+    const response = await api.get(`/reservation/user/${id}/`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
 
+export const createRoom = async (data: {
+  location: string;
+  capacity: number;
+  description: string;
+  availability: number[][];
+  state: string;
+}) => {
+  try {
+    const response = await api.post('/room/', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando sala:', error);
+    throw error;
+  }
+};
+
+export const createRecreativeElement = async (data: {
+  item_name: string;
+  item_quantity: number;
+}) => {
+  try {
+    const response = await api.post('/recreative-elements/', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando elemento recreativo:', error);
+    throw error;
+  }
+};
+
+export const deleteRoom = async (roomId: number): Promise<void> => {
+  try {
+    const response = await api.delete(`/room/${roomId}/`);
+    
+    if (response.status !== 200 && response.status !== 204) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error deleting room:', error);
+    throw new Error('No se pudo eliminar la sala. Por favor intente nuevamente.');
+  }
+};
+
+
+export const deleteRecreativeElement = async (elementId: number): Promise<void> => {
+  try {
+    const response = await api.delete(`/recreative-elements/${elementId}/`);
+    if (response.status !== 204) {
+      throw new Error('Error eliminando elemento');
+    }
+  } catch (error) {
+    console.error('Error deleting element:', error);
+    throw error;
+  }
+};

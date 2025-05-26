@@ -24,3 +24,9 @@ export interface Reservation {
   room : number;
   borrowed_elements: BorrowedElement[];
 }
+
+export interface Room {
+  id: number;
+  location: string;
+  capacity: number;
+}

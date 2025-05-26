@@ -5,9 +5,6 @@ import UbicacionIcon from '../assets/ubicacion.png';
 import RelojIcon from '../assets/reloj.png';
 import PersonaIcon from '../assets/personas.png';
 import LibroIcon from '../assets/libro.png';
-import CalendarioIcon from '../assets/calendario.png';
-import NotificacionIcon from '../assets/notificacion.png';
-import { AvailabilitySection } from './AvailabilityPage';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -17,6 +14,7 @@ const Container = styled.div`
   flex-direction: column;
   gap: 5rem;
   padding-top: 120px;
+  padding-bottom: 100px;
 `;
 
 const CardFeatures = styled.ul`
@@ -214,7 +212,7 @@ const Home = () => {
                 Horarios flexibles
               </FeatureItem>
             </CardFeatures>
-            <Link to="/reserve">
+            <Link to="/rooms/reserve">
               <CardButton>Reservar Sala</CardButton>
             </Link>
           </Card>
@@ -242,27 +240,14 @@ const Home = () => {
           <Card>
             <CardTitle>Mis Reservas</CardTitle>
             <CardDescription>
-              Gestiona tus reservas activas
+              Accede a tus reservas
             </CardDescription>
-            <CardFeatures>
-              <FeatureItem>
-                <FeatureIcon src={CalendarioIcon} alt="calendario" />
-                Historial y reservas activas
-              </FeatureItem>
-              <FeatureItem>
-                <FeatureIcon src={NotificacionIcon} alt="notificacion" />
-                Notificaciones y recordatorios
-              </FeatureItem>
-            </CardFeatures>
-            <Link to="/reservations">
-              <CardButton>Ver Elementos</CardButton>
+            <Link to="/user/reservations">
+              <CardButton>Ver reservas</CardButton>
             </Link>
           </Card>
         </CardsContainer>
       </Section2>
-
-      {/* Sección 3 */}
-       <AvailabilitySection />
     </Container>
     <Footer />
     </>

@@ -6,6 +6,8 @@ import ReservationsPage from './pages/ReservationsPage';
 import AvailabilityPage from './pages/AvailabilityPage';
 import ReserveRoom from './pages/ReserveRoom';
 import ReserveRecreativeElements from './pages/ReserveRecreativeElements';
+import UserReservationsPage from './pages/UserReservationsPage';
+import AdminPage from './pages/AdminPage';
 import Home from './pages/Home';
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
           <Route path="/availability" element={<AvailabilityPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/elements/reserve" element={<ReserveRecreativeElements />} />
+          <Route path="/user/reservations" element={<UserReservationsPage />} />
+          <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </Router>
   );

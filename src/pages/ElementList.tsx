@@ -2,127 +2,134 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { fetchElements } from '../services/api';
-import type { RecreativeElement } from '../types/RecreativeElement.ts';
+import type { RecreativeElement } from '../types/RecreativeElement';
 
-// Props
-interface ElementListProps {
-  onElementSelect?: (element: RecreativeElement[]) => void;
-}
-
-// Estilos
+// Estilos (se mantienen igual)
 const Section = styled.section`
-  padding: 4rem 2rem;
-  background-color: #f3f4f6; /* gray-100 */
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
 `;
 
 const Title = styled.h2`
   font-size: 1.875rem;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
+  color: #343a40;
 `;
 
-const ElementContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  justify-content: center;
+const ElementsTable = styled.div`
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
 `;
 
-const ElementCard = styled.div<{ selected?: boolean }>`
-  background-color: ${({ selected }) => (selected ? '#e0f7fa' : 'white')};
-  border: ${({ selected }) => (selected ? '2px solid #007bff' : 'none')};
-  border-radius: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  width: 100%;
-  max-width: 500px;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  cursor: pointer;
-`;
-
-const ElementTitle = styled.h3`
-  font-size: 1.5rem;
+const TableHeader = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  background-color: #f8f9fa;
+  padding: 1rem;
   font-weight: 600;
-  color: #1f2937 !important;
+  border-bottom: 1px solid #eee;
 `;
 
-const ElementInfo = styled.p`
-  color: #4b5563 !important;
-  margin: 0;
+const TableRow = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const ElementName = styled.div`
+  font-weight: 500;
+  color: #1f2937;
+`;
+
+const ElementQuantity = styled.div`
+  text-align: right;
+  color: #4b5563;
 `;
 
 const LoadingMessage = styled.div`
   text-align: center;
   padding: 3rem;
   font-size: 1.125rem;
-  color: #6b7280; /* gray-500 */
+  color: #6b7280;
 `;
 
-const ElementList = ({ onElementSelect }: ElementListProps) => {
+const ErrorMessage = styled.div`
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+`;
+
+const ElementList = () => {
   const [elements, setElements] = useState<RecreativeElement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedElements, setSelectedElements] = useState<RecreativeElement[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadElements = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const data = await fetchElements();
-        console.log('Datos recibidos de la API:', data);
-        interface ApiElement {
-          id: number;
-          item_name: string;
-          item_quantity: number;
-        }
-
-        const transformedData: RecreativeElement[] = (data as ApiElement[]).map((item: ApiElement): RecreativeElement => ({
-          id: item.id,
-          name: item.item_name,
-          quantity: item.item_quantity,
+        
+        // Transformación de datos según la estructura esperada
+        const transformedElements = data.map((item: any) => ({
+          id: item.id || item.element,
+          name: item.item_name || item.label,
+          quantity: item.item_quantity || item.quantity
         }));
-        setElements(transformedData);
-      } catch (error) {
-        console.error('Error fetching elements:', error);
+        
+        setElements(transformedElements);
+      } catch (err) {
+        console.error('Error fetching elements:', err);
+        setError('Error al cargar los elementos. Por favor intenta de nuevo.');
       } finally {
         setLoading(false);
       }
     };
+
     loadElements();
   }, []);
 
-  const toggleElement = (element: RecreativeElement) => {
-    setSelectedElements((prevSelected) => {
-      const isSelected = prevSelected.some(e => e.id === element.id);
-      const updated = isSelected
-        ? prevSelected.filter(e => e.id !== element.id)
-        : [...prevSelected, element];
-      
-      if (onElementSelect) onElementSelect(updated);
-      return updated;
-    });
-  };
-
   if (loading) return <LoadingMessage>Cargando elementos...</LoadingMessage>;
+  if (error) return <ErrorMessage>{error}</ErrorMessage>;
 
   return (
     <Section>
-      <Title>Elementos Disponibles</Title>
-      <ElementContainer>
-        {elements.map((element) => (
-          <ElementCard
-            key={element.id}
-            selected={selectedElements.some(e => e.id === element.id)}
-            onClick={() => toggleElement(element)}
-          >
-            <ElementTitle>{element.name}</ElementTitle>
-            <ElementInfo>
-              <strong>Cantidad Disponible:</strong> {element.quantity}
-            </ElementInfo>
-          </ElementCard>
-        ))}
-      </ElementContainer>
+      <Title>Elementos Recreativos</Title>
+      <ElementsTable>
+        <TableHeader>
+          <ElementName>Nombre</ElementName>
+          <ElementQuantity>Cantidad</ElementQuantity>
+        </TableHeader>
+        {elements.length > 0 ? (
+          elements.map((element) => (
+            <TableRow key={element.id}>
+              <ElementName>{element.name}</ElementName>
+              <ElementQuantity>{element.quantity}</ElementQuantity>
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <ElementName style={{ gridColumn: '1 / span 2', textAlign: 'center', width: '100%' }}>
+              No hay elementos disponibles
+            </ElementName>
+          </TableRow>
+        )}
+      </ElementsTable>
     </Section>
   );
 };
