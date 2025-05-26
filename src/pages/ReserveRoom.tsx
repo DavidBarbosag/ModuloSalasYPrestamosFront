@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { Room } from '../types/Room';
-import type { RecreativeElement } from '../types/RecreativeElement';
 import styled from 'styled-components';
 import RoomList from './RoomList';
 import { useNavigate } from 'react-router-dom';

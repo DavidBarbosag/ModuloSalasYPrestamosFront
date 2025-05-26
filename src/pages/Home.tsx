@@ -188,9 +188,6 @@ const Home = () => {
                 <Link to="/availability">
                   <ButtonSecondary>Ver Disponibilidad</ButtonSecondary>
                 </Link>
-                <Link to="/register">
-                  <ButtonSecondary>Devoluciones</ButtonSecondary>
-                </Link>
               </ButtonGroup>
             </Section1Text>
             <Image src={ImageTresEstudiantes} alt="Personas compartiendo" />

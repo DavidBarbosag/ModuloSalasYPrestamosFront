@@ -23,7 +23,7 @@ function App() {
           <Route path="/elements/reserve" element={<ReserveRecreativeElements />} />
           <Route path="/user/reservations" element={<UserReservationsPage />} />
           <Route path="/admin" element={<AdminPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/devolucion" element={<RegisterPage />} />
       </Routes>
     </Router>
   );
