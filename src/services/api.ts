@@ -1,8 +1,18 @@
 import axios from 'axios';
 import type { Reservation, User} from '../types/Reservation';
 
+const isLocalhost = window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+
+const baseURL = isLocalhost
+    ? 'http://localhost:8000'  // URL para desarrollo local
+    : 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net';  // URL de producción
+
 const api = axios.create({
-  baseURL: 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net',
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 export const fetchRooms = async () => {

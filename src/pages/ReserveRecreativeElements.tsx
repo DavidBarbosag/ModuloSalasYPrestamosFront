@@ -5,7 +5,6 @@ import ScheduleSelection from '../components/ScheduleSelection';
 import { fetchElements, createReservation, getUserByIdentification } from '../services/api';
 import axios from 'axios';
 import ReactSelect from 'react-select';
-import type { Reservation } from '../types/Reservation';
 
 
 const ResponsiveContainer = styled.div`
@@ -229,16 +228,11 @@ const ReserveRecreativeElements = () => {
         return {
           element_id: e.element,
           amount: e.amount,
-          element_details: {
-            id: e.element_details.id,
-            item_name: e.element_details.name,
-            item_quantity: e.element_details.quantity,
-          },
         };
       });
 
       const reservationData = {
-        room: 0,
+        room: undefined,
         reserved_day: selectedSlot.day,
         reserved_hour_block: selectedSlot.hour,
         user: String(userId),
