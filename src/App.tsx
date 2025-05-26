@@ -15,7 +15,7 @@ function App() {
           <Route path="/rooms" element={<RoomList />} />
           <Route path="/rooms/reserve" element={<ReserveRoom />} />
           <Route path="/elements" element={<ElementList />} />
-            <Route path="/availability" element={<AvailabilityPage />} />
+          <Route path="/availability" element={<AvailabilityPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/elements/reserve" element={<ReserveRecreativeElements />} />
       </Routes>
