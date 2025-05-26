@@ -9,6 +9,7 @@ import ReserveRecreativeElements from './pages/ReserveRecreativeElements';
 import UserReservationsPage from './pages/UserReservationsPage';
 import AdminPage from './pages/AdminPage';
 import Home from './pages/Home';
+import RegisterPage from './pages/RegisterPage';
 function App() {
   return (
     <Router>
@@ -22,6 +23,7 @@ function App() {
           <Route path="/elements/reserve" element={<ReserveRecreativeElements />} />
           <Route path="/user/reservations" element={<UserReservationsPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </Router>
   );

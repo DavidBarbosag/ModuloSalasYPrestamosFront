@@ -209,3 +209,21 @@ export const deleteRecreativeElement = async (elementId: number): Promise<void> 
     throw error;
   }
 };
+
+export const createRegister = async (data: {
+  reservation_id: number;
+  returned_elements: Array<{
+    codigo: string;
+    nombre: string;
+    estado: string;
+    cantidad: number;
+  }>;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/register/', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creando el registro:', error);
+    throw error;
+  }
+};
