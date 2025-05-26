@@ -37,7 +37,7 @@ const ElementsSection = styled.div`
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
+  overflow: visible;
 
   @media (min-width: 768px) {
     flex: 2;
@@ -447,6 +447,12 @@ const ReserveRoom = () => {
             isSearchable
             placeholder="Buscar y seleccionar elementos..."
             noOptionsMessage={() => "No se encontraron elementos"}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+            styles={{
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              menu: (base) => ({ ...base, zIndex: 9999 })
+            }}
           />
         </FormGroup>
 
