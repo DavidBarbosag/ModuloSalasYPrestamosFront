@@ -5,8 +5,9 @@ const isLocalhost = window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1';
 
 const baseURL = isLocalhost
-    ? 'http://localhost:8000'  // URL para desarrollo local
-    : 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net';  // URL de producción
+    ? 'https://desplieguebackproyecto-caewexbzb2hbhje2.eastus-01.azurewebsites.net'
+    : 'http://localhost:8000';
+    
 
 const api = axios.create({
   baseURL,
@@ -44,13 +45,43 @@ export const searchReservations = async (id: number): Promise<Reservation[]> => 
   }
 };
 
-export const getUserByIdentification = async (identification: string): Promise<User> => {
+export const getUserByIdentification = async (identification: string): Promise<User | null> => {
   try {
     const response = await api.get(`/user/${identification}/`);
-    return response.data;
+    
+    console.debug('Respuesta completa del servidor:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
+
+    // Validación adaptada a la estructura real de la API
+    if (!response.data || typeof response.data !== 'object') {
+      throw new Error('Formato de respuesta no válido');
+    }
+
+    const userData = response.data;
+
+    // Convertir la estructura de la API a nuestro modelo User
+    return {
+      id: Number(userData.user_id) || 0, // Mapear user_id a id
+      name: userData.full_name || 'Nombre no proporcionado', // Mapear full_name a name
+      email: userData.email_address || '', // Mapear email_address a email
+      identification: userData.identification_number || identification // Mapear identification_number
+    };
+    
   } catch (error) {
-    console.error('Error fetching user:', error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        return null; // Usuario no encontrado
+      }
+      console.error('Error en la respuesta de la API:', error.response?.data);
+      throw new Error(error.response?.data?.detail || 
+                     error.response?.data?.message || 
+                     'Error al buscar usuario');
+    }
+    console.error('Error inesperado:', error);
+    throw new Error('Error al procesar la respuesta del servidor');
   }
 };
 

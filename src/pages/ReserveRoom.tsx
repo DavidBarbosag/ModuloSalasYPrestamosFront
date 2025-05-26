@@ -230,37 +230,42 @@ const ReserveRoom = () => {
   };
 
   const handleSearchUser = async () => {
-    setError('');
-    if (!identification.trim()) {
-      setError('Por favor ingresa una identificación válida');
+  setError('');
+  if (!identification.trim()) {
+    setError('Por favor ingresa una identificación válida');
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setUserId(null);
+    setUserName(null);
+    
+    const user = await getUserByIdentification(identification);
+    
+    if (!user) {
+      setError('No se encontró un usuario con esa identificación');
       return;
     }
-
-    try {
-      setLoading(true);
-      const userResponse = await getUserByIdentification(identification);
-      if (userResponse?.id) {
-        setUserId(userResponse.id);
-        setUserName(userResponse.name);
-      } else {
-        setError('Usuario no encontrado');
-        setUserId(null);
-      }
-    } catch (error) {
-      console.error('Error buscando usuario:', error);
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.detail || 
-                           error.response?.data?.message || 
-                           'Error al buscar usuario';
-        setError(errorMessage);
-      } else {
-        setError('Error al buscar usuario. Verifica la identificación');
-      }
-      setUserId(null);
-    } finally {
-      setLoading(false);
+    
+    setUserId(user.id);
+    setUserName(user.name);
+    
+  } catch (error) {
+    console.error('Error buscando usuario:', error);
+    setUserId(null);
+    setUserName(null);
+    
+    let errorMessage = 'Error al buscar usuario';
+    if (error instanceof Error) {
+      errorMessage = error.message;
     }
-  };
+    
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -440,17 +445,17 @@ const ReserveRoom = () => {
             </div>
           </FormGroup>
 
-          {userId && (
-            <FormGroup>
-              <Label>Usuario encontrado</Label>
-              <Input
-                type="text"
-                value={`Usuario ID: ${userId} , nombre: ${userName}`}
-                readOnly
-                style={{ backgroundColor: '#e9ecef', color: 'black' }}
-              />
-            </FormGroup>
-          )}
+          {userId && userName && (
+          <FormGroup>
+            <Label>Usuario encontrado</Label>
+            <Input
+              type="text"
+              value={`${userName} (ID: ${userId})`}
+              readOnly
+              style={{ backgroundColor: '#e9ecef', color: 'black' }}
+            />
+          </FormGroup>
+        )}
         
           <FormGroup>
             <Label>Sala seleccionada</Label>
