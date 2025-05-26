@@ -380,7 +380,7 @@ const ReserveRoom = () => {
       
       if (response.id) {
         alert('¡Reserva creada con éxito!');
-        navigate('/Home');
+        navigate('/');
       }
     } catch (error) {
       console.error('Error en reserva:', error);
